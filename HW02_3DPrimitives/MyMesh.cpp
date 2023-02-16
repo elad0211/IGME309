@@ -273,14 +273,56 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 
 	// Replace this with your code
 	// -------------------------------
+
+
 	GLfloat theta = 0;
-	GLfloat delta = static_cast<GLfloat>(2.0 * PI / static_cast<GLfloat>(a_nSubdivisions));
-	for (int i = 0; i < a_nSubdivisions; i++)
+	GLfloat delta = static_cast<GLfloat>(2.0 * PI / static_cast<GLfloat>(a_nSubdivisionsA));
+	for (int i = 0; i < a_nSubdivisionsA; i++)
 	{
 		vector3 temp = vector3(cos(theta) * a_fInnerRadius, sin(theta) * a_fInnerRadius, 0.0f);
 		theta += delta;
-		verticesInner.push_back(temp);
+		verticesBaseCircle.push_back(temp);
 	}
+	GLfloat lamda = static_cast<GLfloat>(2.0 * PI / static_cast<GLfloat>(a_nSubdivisionsA));
+
+	std::vector<vector3> pointlist;
+
+	for (int f = 0; f < a_nSubdivisionsA; f++)
+	{
+		matrix4 m4Transform = IDENTITY_M4;
+		//need to move then roatate
+		m4Transform = glm::rotate(m4Transform, lamda*f, vector3(0.0f, 1.0f, 0.0f));
+		m4Transform = glm::translate(m4Transform, vector3(a_fOuterRadius, 0.0f, 0.0f));
+		std::vector<vector3> verticesBaseCircleCopy = verticesBaseCircle;
+
+
+		for (int i = 0; i < a_nSubdivisionsB; i++)
+		{
+			verticesBaseCircleCopy[i] = m4Transform * vector4(verticesBaseCircleCopy[i], 1.0f);
+			pointlist.push_back ( verticesBaseCircleCopy[i] );
+		}
+		vector3 v3Center = ZERO_V3;
+		v3Center = m4Transform * vector4(v3Center, 1.0f);
+		//for (int i = 0; i < a_nSubdivisionsB; i++)
+		//{
+		//	AddTri(v3Center, verticesBaseCircleCopy[i], verticesBaseCircleCopy[(i + 1) % a_nSubdivisionsB]);
+		//}	
+	}
+	for (int i = 0; i < pointlist.size()-1; i++)
+	{
+		if (pointlist.size() > i + a_nSubdivisionsB + 1)
+		{
+			AddTri(pointlist[i], pointlist[i + a_nSubdivisionsB], pointlist[i + 1 + a_nSubdivisionsB]);
+			AddTri(pointlist[i + 1 + a_nSubdivisionsB], pointlist[i + 1], pointlist[i]);
+		}
+		else
+		{
+			AddTri(pointlist[i], pointlist[i % a_nSubdivisionsB], pointlist[i % a_nSubdivisionsB + 1]);
+			AddTri(pointlist[i % a_nSubdivisionsB + 1], pointlist[i + 1], pointlist[i]);
+		}
+	}
+	
+
 	// Adding information about color
 	CompleteMesh(a_v3Color);
 	CompileOpenGL3X();
